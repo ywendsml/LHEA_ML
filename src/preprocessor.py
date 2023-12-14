@@ -1,5 +1,5 @@
 import pandas as pd
-from phase_rule import *
+from phase_rule_calculator import *
 
 class DataReader:
     def __init__(self, file_path):
