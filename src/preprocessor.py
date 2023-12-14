@@ -59,4 +59,5 @@ if __name__ == '__main__':
     a_processor.group_phases()
     a_processor.drop_columns()
     Engineering_ready_data = a_processor.ouput_data()
+    print(Engineering_ready_data.head(10))
     
