@@ -107,50 +107,51 @@ def calc_pairwise_enthalpy_mixing(phi_a, phi_b, electron_density_a, electron_den
 
     return delta_H_mix
 
+# Function to calculate the density
+def compute_density(percentage, element_info_subset):
+    numerator = sum([0.01 * percentage[i] * element_info_subset[i]['\tAtomic Wt.(g/mol)'] for i in range(len(percentage))])
+    denominator = sum([(0.01 * percentage[i] * element_info_subset[i]['\tAtomic Wt.(g/mol)']) / element_info_subset[i]['\tDensity(g/cm^3)'] for i in range(len(percentage))])
+    return numerator / denominator
+
+        
+def compute_values(percentage, element_info_subset):
+    num_components = len(percentage)
+        
+    avg_atomic_radius = sum([0.01 * percentage[i] * element_info_subset[i]['\tRadius(pm)'] for i in range(num_components)])
+            
+    # Calculate the atomic size difference (delta_radius)
+    delta_radius = sum([0.01 * percentage[i] * (1.0 - element_info_subset[i]['\tRadius(pm)'] / avg_atomic_radius)**2 for i in range(num_components)])
+            
+    # Calculate enthalpy of mixing by summing pairwise enthalpy for all pairs
+    enthalpy_mixing = 0.0
+    for i in range(num_components):
+        for j in range(i+1, num_components):
+            enthalpy_mixing += 4.0 * 0.01 * percentage[i] * 0.01 * percentage[j] * calc_pairwise_enthalpy_mixing(
+                element_info_subset[i]['\tPhi(V)'], element_info_subset[j]['\tPhi(V)'],
+                element_info_subset[i]['\tnWS^1/3'], element_info_subset[j]['\tnWS^1/3'],
+                element_info_subset[i]['\tVm^2/3(cm^2)'], element_info_subset[j]['\tVm^2/3(cm^2)'],
+                element_info_subset[i]['\tR/P(v^2)'], element_info_subset[j]['\tR/P(v^2)'],
+                element_info_subset[i]['\tType'], element_info_subset[j]['\tType'],
+                element_info_subset[i]['\tConstant(a)'], element_info_subset[j]['\tConstant(a)']
+            )
+            
+    # Calculate entropy of mixing
+    entropy_mixing = -8.314 * sum([0.01 * percentage[i] * log(0.01 * percentage[i]) for i in range(num_components)])
+            
+    # Calculate melting temperature
+    melting_temperature = sum([0.01 * percentage[i] * element_info_subset[i]['\tMelting Pt.(K)'] for i in range(num_components)])
+        
+    # Calculate omega
+    omega = (melting_temperature * entropy_mixing) / abs(1000.0 * enthalpy_mixing)
+            
+    return sqrt(delta_radius) * 100, omega, enthalpy_mixing, entropy_mixing, melting_temperature
+
 
 def calc_ML_features(components, element_info_list, density_max=5.0, min_percentage=5, max_percentage=35, step_percentage=1):
     """
     This function is awesome and to calculate the ML features for alloy candidates with 1 element combination.
-    """
+    """    
 
-    # Function to calculate the density
-    def compute_density(percentage, element_info_subset):
-        numerator = sum([0.01 * percentage[i] * element_info_subset[i]['\tAtomic Wt.(g/mol)'] for i in range(len(percentage))])
-        denominator = sum([(0.01 * percentage[i] * element_info_subset[i]['\tAtomic Wt.(g/mol)']) / element_info_subset[i]['\tDensity(g/cm^3)'] for i in range(len(percentage))])
-        return numerator / denominator
-        
-    def compute_values(percentage, element_info_subset):
-        num_components = len(percentage)
-            
-        avg_atomic_radius = sum([0.01 * percentage[i] * element_info_subset[i]['\tRadius(pm)'] for i in range(num_components)])
-            
-        # Calculate the atomic size difference (delta_radius)
-        delta_radius = sum([0.01 * percentage[i] * (1.0 - element_info_subset[i]['\tRadius(pm)'] / avg_atomic_radius)**2 for i in range(num_components)])
-            
-        # Calculate enthalpy of mixing by summing pairwise enthalpy for all pairs
-        enthalpy_mixing = 0.0
-        for i in range(num_components):
-            for j in range(i+1, num_components):
-                enthalpy_mixing += 4.0 * 0.01 * percentage[i] * 0.01 * percentage[j] * calc_pairwise_enthalpy_mixing(
-                    element_info_subset[i]['\tPhi(V)'], element_info_subset[j]['\tPhi(V)'],
-                    element_info_subset[i]['\tnWS^1/3'], element_info_subset[j]['\tnWS^1/3'],
-                    element_info_subset[i]['\tVm^2/3(cm^2)'], element_info_subset[j]['\tVm^2/3(cm^2)'],
-                    element_info_subset[i]['\tR/P(v^2)'], element_info_subset[j]['\tR/P(v^2)'],
-                    element_info_subset[i]['\tType'], element_info_subset[j]['\tType'],
-                    element_info_subset[i]['\tConstant(a)'], element_info_subset[j]['\tConstant(a)']
-                )
-            
-        # Calculate entropy of mixing
-        entropy_mixing = -8.314 * sum([0.01 * percentage[i] * log(0.01 * percentage[i]) for i in range(num_components)])
-            
-        # Calculate melting temperature
-        melting_temperature = sum([0.01 * percentage[i] * element_info_list[i]['\tMelting Pt.(K)'] for i in range(num_components)])
-            
-        # Calculate omega
-        omega = (melting_temperature * entropy_mixing) / abs(1000.0 * enthalpy_mixing)
-            
-        return sqrt(delta_radius) * 100, omega, enthalpy_mixing, entropy_mixing, melting_temperature
-        
     # Logic for five components
     feature_list = []
     if components == 5:
@@ -206,13 +207,35 @@ def phase_rule_calculator(fixed_elements = ['Al'], other_possible_elements = ['T
     
     return total_features
 
+def phase_rule_calculatore_for_single_instance(elements=['Al','Ti','Mn','Mo','Nb'], percentage=[35, 35, 10, 10, 10]):
+    """
+    This function is to calculate the phase rule for a single instance, given the elements and their corresponding percentage.
+    Return: total_features, an ndarray of all alloy candidates with all features.
+    """
+
+    _, element_info = generate_element_info(elements)
+
+    density = compute_density(percentage, element_info[:5])
+
+    delta_radius, omega, enthalpy_mixing, entropy_mixing, melting_temperature = compute_values(percentage, element_info[:5])
+    instance_feature = percentage + [density] + [delta_radius] + [enthalpy_mixing] + [entropy_mixing] + [melting_temperature] + [omega]
+
+    return instance_feature
+
+
 
 if __name__ == "__main__":
-    
+
     fixed_elements = ['Al']
 
     # other_possible_elements = ['Ti','Mn','Mo','Nb','V','Sn','Cu','Zr','Ni','Co','Cr','Fe','W','Ta','Sc','Y','Ag']
     
-    other_possible_elements = ['Ti','Mn','Mo','Nb', 'V']
+    other_possible_elements = ['Ti','Mn','Mo','Nb','V']
 
     total_features = phase_rule_calculator(fixed_elements=fixed_elements, other_possible_elements=other_possible_elements)
+
+    print(total_features)
+
+    test_single_instance_feature = phase_rule_calculatore_for_single_instance(elements=['Al','Ti','Mn','Mo','Nb'], percentage=[35, 35, 10, 10, 10])
+    
+    print(test_single_instance_feature)
