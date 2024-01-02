@@ -1,5 +1,7 @@
 from typing import List
 
+import pickle
+
 from math import log, sqrt
 
 import numpy as np
@@ -65,6 +67,7 @@ def generate_element_info(elements):
         
     return components, element_info_list
 
+
 def calc_pairwise_enthalpy_mixing(phi_a, phi_b, electron_density_a, electron_density_b, molar_volume_a, molar_volume_b, R_by_P_a, R_by_P_b, type_a, type_b, constant_a, constant_b):
     """
     This function is to calculate the pairwise enthalpy of mixing.
@@ -106,6 +109,7 @@ def calc_pairwise_enthalpy_mixing(phi_a, phi_b, electron_density_a, electron_den
     delta_H_mix = c_A * c_B * (0.5 * delta_H_mix_AB + 0.5 * delta_H_mix_BA)
 
     return delta_H_mix
+
 
 # Function to calculate the density
 def compute_density(percentage, element_info_subset):
@@ -172,6 +176,7 @@ def calc_ML_features(components, element_info_list, density_max=5.0, min_percent
         print("Maximum number of components reached")
         exit(0)
 
+
 def get_all_features(combinations_manual):
     """
     This function is to get all features for all alloy candidates with all element combination.
@@ -193,6 +198,7 @@ def get_all_features(combinations_manual):
 
     return total_feature_np
 
+
 def phase_rule_calculator(fixed_elements = ['Al'], other_possible_elements = ['Ti','Mn','Mo','Nb','V']):
     """
     This function is to calculate the phase rule for alloy candidates, given the fixed elements and other possible elements.
@@ -206,6 +212,18 @@ def phase_rule_calculator(fixed_elements = ['Al'], other_possible_elements = ['T
     print("\n-----------------\n")
     
     return total_features
+
+
+def output_features_to_pkl_file(total_features, output_file_name):
+    """
+    This function is to output the features of all alloy candidates to a pkl file.
+    """
+
+    with open(f'{output_file_name}.pkl', 'wb') as f:
+        pickle.dump(total_features, f)
+
+    print('List saved to file.')
+
 
 def phase_rule_calculatore_for_single_instance(elements=['Al','Ti','Mn','Mo','Nb'], percentage=[35, 35, 10, 10, 10]):
     """
@@ -223,18 +241,17 @@ def phase_rule_calculatore_for_single_instance(elements=['Al','Ti','Mn','Mo','Nb
     return instance_feature
 
 
-
 if __name__ == "__main__":
 
     fixed_elements = ['Al']
 
-    # other_possible_elements = ['Ti','Mn','Mo','Nb','V','Sn','Cu','Zr','Ni','Co','Cr','Fe','W','Ta','Sc','Y','Ag']
+    #other_possible_elements = ['Ti','Mn','Mo','Nb','V','Sn','Cu','Zr','Ni','Co','Cr','Fe','W','Ta','Sc','Y','Ag']
     
     other_possible_elements = ['Ti','Mn','Mo','Nb','V']
 
     total_features = phase_rule_calculator(fixed_elements=fixed_elements, other_possible_elements=other_possible_elements)
 
-    print(total_features)
+    output_features_to_pkl_file(total_features, output_file_name='v0_test')
 
     test_single_instance_feature = phase_rule_calculatore_for_single_instance(elements=['Al','Ti','Mn','Mo','Nb'], percentage=[35, 35, 10, 10, 10])
     
