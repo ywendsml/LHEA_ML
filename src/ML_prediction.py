@@ -44,5 +44,5 @@ if __name__ == '__main__':
     model, scaler = load_model_and_scaler('logistic_regression_model', 'scaler')
     # Predict the phases of all alloy candidates
     prediction = predict_phase(total_features[:, 6:], model, scaler)
-    # Output the prediction
+    
     print(prediction)
