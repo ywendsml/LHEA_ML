@@ -36,7 +36,7 @@ def predict_phase(features, model, scaler, to_csv=False, csv_name='prediction.cs
 
     return pd.DataFrame(model.predict(scaled_features))
 
-def output_prediction(features, prediction, csv_name='prediction.csv', filter_output=False, desired_phase=None):
+def output_prediction(features, prediction, csv_name='output/prediction.csv', filter_output=False, desired_phase=None):
 
     features_df = pd.DataFrame(features)
     new_prediction_df = prediction.rename(columns={0: 'bcc', 1: 'fcc', 2: 'others'})
