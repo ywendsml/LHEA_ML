@@ -36,6 +36,28 @@ def predict_phase(features, model, scaler, to_csv=False, csv_name='prediction.cs
 
     return pd.DataFrame(model.predict(scaled_features))
 
+def output_prediction(features, prediction, csv_name='prediction.csv', filter_output=False, desired_phase=None):
+
+    features_df = pd.DataFrame(features)
+    new_prediction_df = prediction.rename(columns={0: 'bcc', 1: 'fcc', 2: 'others'})
+
+    final_df = pd.concat([features_df, new_prediction_df], axis=1)
+
+    is_bcc = None
+    is_fcc = None
+    is_others = None
+
+    if filter_output:
+        if desired_phase == 'bcc_only':
+            is_bcc = final_df['bcc'] == True
+            is_fcc = final_df['fcc'] == False
+            is_others = final_df['others'] == False
+        filtered_df = final_df[(is_bcc) & (is_fcc) & (is_others)]
+    else:
+        filtered_df = final_df
+
+    pd.DataFrame(filtered_df).to_csv(csv_name)
+
 
 if __name__ == '__main__':
     # Load the features of all alloy candidates
@@ -44,5 +66,7 @@ if __name__ == '__main__':
     model, scaler = load_model_and_scaler('logistic_regression_model', 'scaler')
     # Predict the phases of all alloy candidates
     prediction = predict_phase(total_features[:, 6:], model, scaler)
+
+    # Output the prediction
+    output_prediction(total_features, prediction, filter_output=True, desired_phase='bcc_only')
     
-    print(prediction)
